@@ -127,6 +127,10 @@ class FTBSession:
                 "You exceeded the allowed number of attempts"
                 not in self.browser.page_source
             ), "got rate limited, need to wait 30 minutes and try again"
+            assert (
+                "The information you entered does not match our records"
+                not in self.browser.page_source
+            ), "wrong password, something is broken on our end most likely"
             log("submit security questions")
             question = self.browser.find_element(By.ID, "s_Answer_2").text
             answer = self.cfg.security_answer(question)
@@ -136,7 +140,7 @@ class FTBSession:
                 remember.click()
             self.browser.find_element(By.CSS_SELECTOR, "button[type='submit']").click()
             time.sleep(5)
-            log("access user settings")
+            log("access password update page")
             self.browser.get(
                 "https://webapp.ftb.ca.gov/MyFTBAccess/Profile/ChangePassword"
             )
@@ -144,7 +148,7 @@ class FTBSession:
             new_pass = pwgen(20)
             log("update password manager")
             self.cfg.password = new_pass
-            log("submit password change")
+            log("submit password update page")
             self.browser.find_element(By.ID, "Password").send_keys(new_pass)
             self.browser.find_element(By.ID, "RePassword").send_keys(new_pass)
             self.browser.find_element(By.CSS_SELECTOR, "button[type='submit']").click()
@@ -154,6 +158,7 @@ class FTBSession:
                 not in self.browser.page_source
             ), "system does not allow password changes right now, reason unclear"
             assert "Your information has been updated" in self.browser.page_source
+            log("password changed successfully")
         except Exception:
             if self.debug:
                 traceback.print_exc()
