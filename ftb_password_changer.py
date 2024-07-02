@@ -23,19 +23,35 @@ def log(msg: str):
 
 
 def pwgen(length: int):
-    alphabet = string.ascii_letters + string.digits + string.punctuation
+    # FTB has undocumented password restrictions that needlessly block
+    # some special characters from being used, likely due to
+    # incompetence on their end. The error message is "Please use a
+    # different password". Since they don't give any documentation
+    # about their *actual* password policy, I've sampled all the
+    # working special characters from my last eight passwords and am
+    # only using those going forward.
+    alphabet = string.ascii_letters + string.digits + r" !#%'()*+,-./;<=>@[\]{|~"
     while True:
         pw = "".join(secrets.choice(alphabet) for _ in range(length))
+        invalid = False
         for r in ("[a-z]", "[A-Z]", "[0-9]", "[^a-zA-Z0-9]"):
             if not re.search(r, pw):
-                continue
+                invalid = True
+                break
+        if invalid:
+            continue
         return pw
 
 
 class Config:
-    def __init__(self, fname: str):
+    def __init__(self, fname: str, profile: str):
         with open(fname) as f:
-            self.cfg = yaml.safe_load(f)
+            try:
+                self.cfg = yaml.safe_load(f)["profiles"][profile]
+            except KeyError as e:
+                raise RuntimeError(
+                    f"no profile named {repr(profile)} in {fname}"
+                ) from e
         self.cache = {}
 
     def _cache(self, k: str, f: Callable[[], str]):
@@ -172,8 +188,9 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--debug", action="store_true")
     parser.add_argument("--force-headless", action="store_true")
+    parser.add_argument("profile")
     args = parser.parse_args()
-    cfg = Config("ftb.yaml")
+    cfg = Config("ftb.yaml", args.profile)
     s = FTBSession(cfg, args=args)
     try:
         s.perform()
