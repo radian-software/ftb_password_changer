@@ -138,7 +138,7 @@ class FTBSession:
                 if "Challenge Validation" in self.browser.page_source:
                     continue
                 break
-            time.sleep(5)
+            time.sleep(3)
             assert (
                 "You exceeded the allowed number of attempts"
                 not in self.browser.page_source
@@ -147,15 +147,26 @@ class FTBSession:
                 "The information you entered does not match our records"
                 not in self.browser.page_source
             ), "wrong password, something is broken on our end most likely"
-            log("submit security questions")
-            question = self.browser.find_element(By.ID, "s_Answer_2").text
-            answer = self.cfg.security_answer(question)
-            self.browser.find_element(By.ID, "Answer").send_keys(answer)
-            remember = self.browser.find_element(By.ID, "RememberMe")
-            if not remember.is_selected():
-                remember.click()
-            self.browser.find_element(By.CSS_SELECTOR, "button[type='submit']").click()
-            time.sleep(5)
+            if "verification code" in self.browser.page_source:
+                assert (
+                    self.debug
+                ), "can't handle sms verification outside of debug mode, for now"
+                log("wait for sms verification")
+                while "verification code" in self.browser.page_source:
+                    time.sleep(3)
+                time.sleep(3)
+            if "security question" in self.browser.page_source:
+                log("submit security questions")
+                question = self.browser.find_element(By.ID, "s_Answer_2").text
+                answer = self.cfg.security_answer(question)
+                self.browser.find_element(By.ID, "Answer").send_keys(answer)
+                remember = self.browser.find_element(By.ID, "RememberMe")
+                if not remember.is_selected():
+                    remember.click()
+                self.browser.find_element(
+                    By.CSS_SELECTOR, "button[type='submit']"
+                ).click()
+                time.sleep(5)
             log("access password update page")
             self.browser.get(
                 "https://webapp.ftb.ca.gov/MyFTBAccess/Profile/ChangePassword"
