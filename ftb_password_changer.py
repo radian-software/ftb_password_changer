@@ -135,8 +135,11 @@ class FTBSession:
             while True:
                 if datetime.now() - start_time > timedelta(minutes=2):
                     raise RuntimeError("timed out waiting for akamai challenge")
-                if "Challenge Validation" in self.browser.page_source:
-                    continue
+                try:
+                    if "Challenge Validation" in self.browser.page_source:
+                        continue
+                except Exception:
+                    pass  # selenium race condition
                 break
             time.sleep(3)
             assert (
