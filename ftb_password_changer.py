@@ -11,7 +11,6 @@ import time
 import traceback
 from typing import Callable
 
-import Levenshtein
 import selenium.webdriver as webdriver
 from selenium.webdriver.common.by import By
 import yaml
@@ -102,7 +101,7 @@ class Config:
 
     def security_answer(self, question: str) -> str:
         for idx, entry in enumerate(self.cfg["questions"]):
-            if Levenshtein.distance(question, entry["q"]) < 3:
+            if question == entry["q"]:
                 return self._expand(entry["a"], f"question{idx + 1}")
         raise RuntimeError(f"no matches for security question {repr(question)}")
 
